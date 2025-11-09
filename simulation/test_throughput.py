@@ -104,38 +104,6 @@ def get_r_matrix(real_rx_pos):
 # ==============================
 # Plotting
 # ==============================
-def plot_receiver_grid(real_rx_pos, r_matrix, x_max, y_max):
-    """Plot receivers + pairwise distances."""
-    fig = plt.figure(figsize=(10, 10))
-    x = [p[1] for p in real_rx_pos]
-    y = [p[2] for p in real_rx_pos]
-    names = [p[0] for p in real_rx_pos]
-
-    n = len(real_rx_pos)
-    for i in range(n):
-        for j in range(i + 1, n):
-            plt.plot([x[i], x[j]], [y[i], y[j]], 'b-', linewidth=1.5, alpha=0.5, zorder=1)
-            midx, midy = (x[i] + x[j]) / 2, (y[i] + y[j]) / 2
-            plt.text(midx, midy, f'{r_matrix[i,j]:.1f}m', fontsize=9, ha='center', va='center',
-                     bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow',
-                               edgecolor='black', alpha=0.7), zorder=2)
-
-    plt.scatter(x, y, s=500, c='red', marker='o', edgecolors='black', linewidths=3, zorder=3)
-    for name, xi, yi in real_rx_pos:
-        plt.text(xi, yi, name, fontsize=12, fontweight='bold',
-                 ha='center', va='center', color='white', zorder=4)
-
-    plt.title("Receiver Grid with Distances", fontsize=16, fontweight='bold')
-    plt.xlabel("X Position (m)")
-    plt.ylabel("Y Position (m)")
-    plt.grid(True, linestyle='--', alpha=0.4)
-    plt.axis('equal')
-    #plt.xlim(-2, x_max + 2)
-    #plt.ylim(-2, y_max + 2)
-   
-    plt.tight_layout()
-    return fig  # return fig instead of showing
-
 def _make_table(ax, real_rx_pos, matrix, title):
     """Helper: draw table for capacity matrix."""
     names = [p[0] for p in real_rx_pos]
@@ -158,25 +126,61 @@ def _make_table(ax, real_rx_pos, matrix, title):
                 table[r, c].set_facecolor("#f7f7f7")
     ax.set_title(title, fontsize=13, fontweight='bold', pad=10)
 
-def plot_capacity_tables(real_rx_pos, direct_capacity_matrix, mesh_capacity_matrix):
-    """Plot direct and mesh capacity tables together."""
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6 + 0.35 * len(real_rx_pos)),
-                                   constrained_layout=True)
-    _make_table(ax1, real_rx_pos, direct_capacity_matrix, "Direct Link Capacity (Mbps)")
-    _make_table(ax2, real_rx_pos, mesh_capacity_matrix, "Mesh (Widest-Path) Capacity (Mbps)")
-    return fig  # return fig instead of showing
+def plot_combined_visualization(real_rx_pos, r_matrix, direct_capacity_matrix, mesh_capacity_matrix, x_max, y_max):
+    """Plot receivers + distances and capacity tables in a single figure."""
+    n = len(real_rx_pos)
+    fig = plt.figure(figsize=(14, 10))
+    
+    # Create grid: top for plot, bottom split for two tables
+    gs = fig.add_gridspec(3, 2, height_ratios=[2, 1, 1], hspace=0.4, wspace=0.1)
+    
+    # Top: Receiver grid plot (spans both columns)
+    ax_plot = fig.add_subplot(gs[0, :])
+    x = [p[1] for p in real_rx_pos]
+    y = [p[2] for p in real_rx_pos]
+    names = [p[0] for p in real_rx_pos]
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            ax_plot.plot([x[i], x[j]], [y[i], y[j]], 'b-', linewidth=1.5, alpha=0.5, zorder=1)
+            midx, midy = (x[i] + x[j]) / 2, (y[i] + y[j]) / 2
+            ax_plot.text(midx, midy, f'{r_matrix[i,j]:.1f}m', fontsize=9, ha='center', va='center',
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow',
+                                edgecolor='black', alpha=0.7), zorder=2)
+
+    ax_plot.scatter(x, y, s=500, c='red', marker='o', edgecolors='black', linewidths=3, zorder=3)
+    for name, xi, yi in real_rx_pos:
+        ax_plot.text(xi, yi, name, fontsize=12, fontweight='bold',
+                    ha='center', va='center', color='white', zorder=4)
+
+    ax_plot.set_title("Receiver Grid with Distances", fontsize=16, fontweight='bold')
+    ax_plot.set_xlabel("X Position (m)")
+    ax_plot.set_ylabel("Y Position (m)")
+    ax_plot.grid(True, linestyle='--', alpha=0.4)
+    ax_plot.axis('equal')
+    
+    # Bottom left: Direct capacity table
+    ax_direct = fig.add_subplot(gs[1, :])
+    _make_table(ax_direct, real_rx_pos, direct_capacity_matrix, "Direct Link Capacity (Mbps)")
+    
+    # Bottom right: Mesh capacity table
+    ax_mesh = fig.add_subplot(gs[2, :])
+    _make_table(ax_mesh, real_rx_pos, mesh_capacity_matrix, "Mesh (Widest-Path) Capacity (Mbps)")
+    
+    return fig
 
 # ==============================
 # Main
 # ==============================
 def main():
+    
     x_max, y_max = 50, 50
     real_rx_pos = [
-        ('A', 24, 40),
-        ('B', 10, 10),
-        ('C', 40, 10),
-        ('D', 25, 25),
-        ('E', 35, 45),
+        ('A', 25, 1),
+        ('B', 25, 49),
+       # ('C', 40, 10),
+       # ('D', 25, 25),
+       # ('E', 35, 45),
     ]
 
     print("Receiver Grid Configuration")
@@ -198,7 +202,6 @@ def main():
     # Mesh (widest-path) capacities
     mesh_cap = build_mesh_capacity_matrix(r_matrix, direct_cap)
 
-    # Console summary
     print("Distance Matrix (m):")
     print(np.round(r_matrix, 2), "\n")
     print("Direct Capacity Matrix (Mbps):")
@@ -206,11 +209,8 @@ def main():
     print("Mesh Capacity Matrix (Mbps):")
     print(np.round(mesh_cap / 1e6, 2), "\n")
 
-    # Generate figures (but don't show yet)
-    fig1 = plot_receiver_grid(real_rx_pos, r_matrix, x_max, y_max)
-    fig2 = plot_capacity_tables(real_rx_pos, direct_cap, mesh_cap)
+    fig = plot_combined_visualization(real_rx_pos, r_matrix, direct_cap, mesh_cap, x_max, y_max)
 
-    # ✅ Show all figures at once
     plt.show()
 
 if __name__ == "__main__":
