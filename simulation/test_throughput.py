@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 # ==============================
 # Configuration parameters
 # ==============================
-TX_POWER = 20        # dBm - transmit power
-FREQUENCY = 2.4e9    # Hz  - 2.4 GHz
-NOISE_FLOOR = -90    # dBm - total noise power in band (simple model)
-BANDWIDTH = 20e6     # Hz  - 20 MHz (typical Wi-Fi channel)
+TX_POWER = 36        # dBm - transmit power
+FREQUENCY = 2.3e9    # Hz  - 2.4 GHz
+NOISE_FLOOR = -60    # dBm - total noise power in band (simple model)
+BANDWIDTH = 8e6     # Hz  - 20 MHz (typical Wi-Fi channel)
 
 # ==============================
 # Utility conversions
